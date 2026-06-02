@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calorify - Track & Visualise Your Diet</title>
+    <style>
+        :root {
+            --primary: #2ec4b6;
+            --secondary: #e71d36;
+            --dark: #011627;
+            --light: #f8f9fa;
+            --grey: #e0e0e0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h1 {
+            color: var(--primary);
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        /* Dashboard Tracker Rules */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            text-align: center;
+            border-bottom: 4px solid var(--grey);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card.budget { border-color: var(--primary); }
+        .card.food { border-color: #ff9f1c; }
+        .card.remaining { border-color: #011627; }
+
+        .card h3 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #777;
+            margin-bottom: 0.5rem;
+        }
+
+        .card .number {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: var(--dark);
+        }
+
+        /* Gallery Rules */
+        .gallery-section h2 {
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            border-left: 4px solid var(--primary);
+            padding-left: 0.5rem;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+
+        .gallery-item {
+            position: relative;
+            aspect-ratio: 1 / 1;
+            overflow: hidden;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background-color: var(--grey);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.08);
+        }
+
+        .gallery-item .overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.7));
+            padding: 1rem;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .gallery-item:hover .overlay {
+            opacity: 1;
+        }
+
+        /* Lightbox Modal Configuration */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(1, 22, 39, 0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            max-width: 90%;
+            max-height: 80vh;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            object-fit: contain;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-size: 2.5rem;
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: var(--secondary);
+        }
+
+        footer {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #777;
+            font-size: 0.9rem;
+            margin-top: 4rem;
+            border-top: 1px solid var(--grey);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Calorify.</h1>
+        <p>Interactive Macro Logger</p>
+    </header>
+
+    <div class="container">
+        <section class="dashboard">
+            <div class="card budget">
+                <h3>Daily Budget</h3>
+                <div class="number">2,000</div>
+            </div>
+            <div class="card food">
+                <h3>Food Logged</h3>
+                <div class="number" id="food-calories">450</div>
+            </div>
+            <div class="card remaining">
+                <h3>Remaining</h3>
+                <div class="number" id="remaining-calories">1,550</div>
+            </div>
+        </section>
+
+        <section class="gallery-section">
+            <h2>Select Meals to View & Log</h2>
+            <div class="gallery-grid" id="image-gallery">
+                </div>
+        </section>
+    </div>
+
+    <div class="modal" id="lightbox-modal">
+        <span class="close-btn" id="close-modal">&times;</span>
+        <img class="modal-content" id="modal-img" src="" alt="Expanded View">
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Calorify Dashboard. Hosted seamlessly via GitHub Pages.</p>
+    </footer>
+
+    <script>
+        // Array organizing your unique dataset strings
+        const rawImages = [
+            "PictureUnlock_shenbotuwen_813412_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813413_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813414_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813415_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813416_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813417_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813418_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813419_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813421_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813422_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_814691_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_814425_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813880_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813878_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813649_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813496_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813492_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813491_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813487_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813464_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813460_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813459_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813458_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813424_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813423_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_813457_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817499_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817498_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_816676_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_816613_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_816611_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_816384_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_816382_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_816381_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_816174_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_816129_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_815868_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_815512_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_815510_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_815142_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_815139_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_814895_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817695_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817693_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817641_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817640_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817639_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817638_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817637_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817636_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817635_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817507_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817505_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817504_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_828732_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817712_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817711_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817710_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817708_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817706_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817705_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817704_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817703_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817701_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817700_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_817698_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829124_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829123_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829120_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829101_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829053_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829100_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829052_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829049_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829050_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_828738_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_828737_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_828736_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_828734_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829473_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829472_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829455_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829454_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829453_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829451_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829450_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829449_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829448_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829327_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829325_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829324_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829477_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829476_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829475_user0.pictureunlock.jpg",
+            "PictureUnlock_shenbotuwen_829474_user0.pictureunlock.jpg"
+        ];
+
+        // Filter out duplicate image references automatically
+        const uniqueImages = [...new Set(rawImages)];
+
+        const galleryGrid = document.getElementById('image-gallery');
+        const modal = document.getElementById('lightbox-modal');
+        const modalImg = document.getElementById('modal-img');
+        const closeModal = document.getElementById('close-modal');
+
+        // Dynamically build and render the clean structure
+        uniqueImages.forEach((imgFilename, index) => {
+            const container = document.createElement('div');
+            container.className = 'gallery-item';
+            
+            const img = document.createElement('img');
+            // If images are stored in a folder like "images/", change to `images/${imgFilename}`
+            img.src = imgFilename; 
+            img.alt = `Calorie Item ${index + 1}`;
+            img.loading = "lazy"; // Performance boost for large asset pools
+
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
+            overlay.innerText = `Meal Context #${100 + index} \nClick to expand`;
+
+            container.appendChild(img);
+            container.appendChild(overlay);
+            
+            // Image expansion trigger action
+            container.addEventListener('click', () => {
+                modalImg.src = img.src;
+                modal.classList.add('show');
+            });
+
+            galleryGrid.appendChild(container);
+        });
+
+        // Close functions for lightbox
+        closeModal.addEventListener('click', () => {
+            modal.classList.remove('show');
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('show');
+            }
+        });
+
+        // Close lightbox via Keyboard ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('show')) {
+                modal.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>
